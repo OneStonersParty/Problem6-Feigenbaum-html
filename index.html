@@ -25,6 +25,10 @@
     <br/>
     <div>x<sub>0</sub> = <span id="valofx0"></span></div>
     <input id="x0" type="range" min="0" max="100" value="50">
+    <div>Feigenbaum resolution = <span id="valoffeig">250</span></div>
+    <input id="feigres" type="range" min="1" max="5" value="1">
+    <div>Show value of &#956; in Feigenbaum diagram</div>
+    <input id="showmu" type="checkbox">
   </div>
 
   <div id="functionPlot1"></div>
@@ -55,6 +59,7 @@
     var x0 = 0.5;
     var feigenbaum = [];
     var feigenbaumResolution = 250;
+    var showMu = false;
 
     function almostEqual(n1, n2) {
       n1 = Math.round(n1 * 10000) / 10000;
@@ -102,6 +107,17 @@
       plotMgr.pointPlot("#iterationPlot1", 300, 300, [100,200], "iteration step", iterationValues)
     }
 
+    function updateFeigenbaum () {
+      var annotations;
+      if (showMu)
+        annotations = {annotations: [{
+          x: mu,
+          text: '\u03BC'
+        }]};
+      plotMgr.pointPlot("#feigenbaum", 600, 300, funcList[selectedFunction].muRange, "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
+      feigenbaum, annotations);
+    }
+
     function setSelectedFunction(index) {
       selectedFunction = index;
       mu = 0.5;
@@ -110,22 +126,15 @@
         .attr("max", funcList[index].muRange[1]*100)
         .attr("value", 50);
       feigenbaum = calculateFeigenbaum();
-      plotMgr.pointPlot("#feigenbaum", 600, 300, funcList[selectedFunction].muRange, "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
-      feigenbaum, {annotations: [{
-        x: mu,
-        text: '\u03BC'
-      }]});
+      updateFeigenbaum();
       update();
     }
 
     document.getElementById("mu").oninput = function () {
       mu = this.value / 100;
       update();
-      plotMgr.pointPlot("#feigenbaum", 600, 300, funcList[selectedFunction].muRange, "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
-        feigenbaum, {annotations: [{
-          x: mu,
-          text: '\u03BC'
-      }]});
+      if (showMu)
+        updateFeigenbaum();
     }
 
     document.getElementById("x0").oninput = function () {
@@ -133,13 +142,25 @@
       update();
     }
 
+    $("#feigres").change(function () {
+      feigenbaumResolution = parseInt($("#feigres").val()) * 250;
+      $("#valoffeig").text(feigenbaumResolution);
+      feigenbaum = calculateFeigenbaum();
+      updateFeigenbaum();
+    });
+
     $("#sel-func").change(function () {
       setSelectedFunction(parseInt(
         $( "#sel-func option:selected" ).attr("value")
       ));
     });
 
-    setSelectedFunction(1);
+    $("#showmu").change(function() {
+      showMu = $("#showmu").is(":checked");
+      updateFeigenbaum();
+    });
+
+    setSelectedFunction(0);
 
 
   </script>
