@@ -1,0 +1,14 @@
+#functionPlot1 {
+  position: absolute;
+}
+
+#iterationPlot1 {
+  position: absolute;
+  top: 420px;
+  left: 620px;
+}
+
+#feigenbaum {
+  position: absolute;
+  top: 420px;
+}

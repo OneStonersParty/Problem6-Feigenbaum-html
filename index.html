@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>math.js | plot</title>
+
+  <link rel="stylesheet" type="text/css" href="style.css" />
+
+  <script src="lib/jquery-3.2.1.min.js"></script>
+
+  <script src="lib/math.min.js"></script>
+
+  <script src="lib/d3.min.js"></script>
+  <script src="lib/function-plot.min.js"></script>
+</head>
+<body>
+
+  <div>
+    <div>&#956; = <span id="valofmu"></span></div>
+    <input id="mu" type="range" min="0" max="400" value="250">
+    <br/>
+    <div>x<sub>0</sub> = <span id="valofx0"></span></div>
+    <input id="x0" type="range" min="0" max="100" value="50">
+  </div>
+
+  <div id="functionPlot1"></div>
+  <div id="iterationPlot1"></div>
+  <div id="feigenbaum"></div>
+
+  <script>
+    var mu = 2.5;
+    var x0 = 0.5;
+    var feigenbaum = [];
+
+    function almostEqual(n1, n2) {
+      n1 = Math.round(n1 * 10000) / 10000;
+      n2 = Math.round(n2 * 10000) / 10000;
+      return (n1 == n2);
+    }
+
+    function draw() {
+      var options = {
+        target: '#functionPlot1',
+        disableZoom: true,
+        width: 300,
+        height: 300,
+        xAxis: {
+          domain: [0, 1]
+        },
+        yAxis: {
+          domain: [0, 1]
+        },
+        tip: {
+          xLine: true
+        },
+        data: [{
+          fn: "x",
+          color: "gray",
+          sampler: 'builtIn',  // this will make function-plot use the evaluator of math.js
+          nSamples: 100,
+          graphType: 'polyline'
+        },{
+          fn: mu + " * x * (1-x)",
+          sampler: 'builtIn',  // this will make function-plot use the evaluator of math.js
+          graphType: 'polyline'
+        }]
+      };
+      if (mu > 1) {
+        options.annotations = [{
+          x: 1-1/mu,
+          text: 'p\u03BC'
+        },{
+          y: 1-1/mu
+        },{
+          x: 1/mu,
+          text: 'q\u03BC'
+        }];
+      }
+      try {
+        functionPlot(options);
+      }
+      catch (err) {
+        console.log(err);
+        alert(err);
+      }
+    }
+
+    function doIteration(func, x0, muValue) {
+      var result = [];
+      for (var i = 0, xi = x0; i <= 200; i++) {
+        if (i >= 100) {
+          if (typeof(muValue) == "number") {
+            for (var j = 0; j < result.length; j++) {
+              if (almostEqual(xi, result[j][1]))
+                return result;
+            }
+            result.push([muValue, xi]);
+          }
+          else
+            result.push([i,xi]);
+        }
+        xi = func(xi);
+      }
+      return result;
+    }
+
+    function drawIteration(iteration) {
+      try {
+        functionPlot({
+          target: '#iterationPlot1',
+          disableZoom: true,
+          width: 300,
+          height: 300,
+          xAxis: {
+            domain: [100, 200],
+            label: "iteration step"
+          },
+          yAxis: {
+            domain: [0, 1]
+          },
+          data: [{
+            fnType: "points",
+            points: iteration,
+            graphType: "scatter"
+          }]
+        });
+      }
+      catch (err) {
+        console.log(err);
+        alert(err);
+      }
+    }
+
+    function calculateFeigenbaum () {
+      var result = [];
+      for (var mu = 0; mu <= 4; mu = mu + 0.01) {
+        var tempArray = doIteration(function(x){return mu*x*(1-x);}, 0.5, mu);
+        result = result.concat(tempArray);
+      }
+      return result;
+    }
+
+    function drawFeigenbaum(feigenbaum, currentMu) {
+      try {
+        functionPlot({
+          target: '#feigenbaum',
+          disableZoom: true,
+          width: 600,
+          height: 300,
+          xAxis: {
+            domain: [0, 4],
+            label: "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+          },
+          yAxis: {
+            domain: [0, 1]
+          },
+          annotations: [{
+            x: currentMu,
+            text: '\u03BC'
+          }],
+          data: [{
+            fnType: "points",
+            points: feigenbaum,
+            graphType: "scatter"
+          }]
+        });
+      }
+
+      catch (err) {
+        console.log(err);
+        alert(err);
+      }
+    }
+
+    function update() {
+      $("#valofmu").text(mu);
+      $("#valofx0").text(x0);
+      draw();
+      var iterationValues = doIteration(function(x){return mu*x*(1-x);}, x0);
+      drawIteration(iterationValues);
+      //console.log(iterationValues);
+    }
+
+    document.getElementById("mu").oninput = function () {
+      mu = this.value / 100;
+      update();
+      drawFeigenbaum(feigenbaum, mu);
+    }
+
+    document.getElementById("x0").oninput = function () {
+      x0 = this.value / 100;
+      update();
+    }
+
+    update();
+
+    feigenbaum = calculateFeigenbaum();
+    drawFeigenbaum(feigenbaum, mu);
+    console.log(feigenbaum);
+  </script>
+
+</body>
+</html>
