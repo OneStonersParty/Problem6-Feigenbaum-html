@@ -42,6 +42,7 @@
         func: function (x, imu) {
           return imu*x*(1-x);
         },
+        muthrs: 1,
         expr: " * x * (1-x)",
         muRange: [0,4]
       }, {
@@ -49,6 +50,7 @@
         func: function (x, imu) {
           return imu * Math.sin(Math.PI * x);
         },
+        muthrs: 1/math.PI,
         expr: " * sin(PI * x)",
         muRange: [0,1]
       }
@@ -101,8 +103,20 @@
     function update() {
       $("#valofmu").text(mu);
       $("#valofx0").text(x0);
+      var annotations;
+      if (mu > funcList[selectedFunction].muthrs) {
+        annotations = {annotations: [{
+          x: 1-1/mu,
+          text: 'p\u03BC'
+        },{
+          y: 1-1/mu
+        },{
+          x: 1/mu,
+          text: 'q\u03BC'
+        }]};
+      }
       plotMgr.funcPlotWithFixedPoint("#functionPlot1", 300, 300, [0,1],
-        mu + funcList[selectedFunction].expr);
+        mu + funcList[selectedFunction].expr, annotations);
       var iterationValues = doIteration(funcList[selectedFunction].func, x0, mu, false);
       plotMgr.pointPlot("#iterationPlot1", 300, 300, [100,200], "iteration step", iterationValues)
     }

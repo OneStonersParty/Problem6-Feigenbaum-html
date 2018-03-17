@@ -1,6 +1,6 @@
 var plotMgr = {
 
-  funcPlotWithFixedPoint(target, w, h, xDomain, expr) {
+  funcPlotWithFixedPoint(target, w, h, xDomain, expr, additionalOptions) {
     var options = {
       target: target,
       disableZoom: true,
@@ -27,17 +27,8 @@ var plotMgr = {
         graphType: 'polyline'
       }]
     };
-    if (mu > 1) {
-      options.annotations = [{
-        x: 1-1/mu,
-        text: 'p\u03BC'
-      },{
-        y: 1-1/mu
-      },{
-        x: 1/mu,
-        text: 'q\u03BC'
-      }];
-    }
+    if (additionalOptions)
+      $.extend(options, additionalOptions);
     plotMgr._draw(options);
   },
 
