@@ -17,11 +17,11 @@
   <div>
     <div>Function: </div>
     <select id="sel-func">
-      <option value="quadratic">Quadratic Family</option>
-      <option value="sin">Sine function</option>
+      <option value="0">Quadratic Family</option>
+      <option value="1">Sine function</option>
     </select>
     <div>&#956; = <span id="valofmu"></span></div>
-    <input id="mu" type="range" min="0" max="400" value="250">
+    <input id="mu" type="range" min="0" max="0" value="0">
     <br/>
     <div>x<sub>0</sub> = <span id="valofx0"></span></div>
     <input id="x0" type="range" min="0" max="100" value="50">
@@ -42,18 +42,19 @@
         muRange: [0,4]
       }, {
         name: "Sine",
-        func: function (x) {
-          return mu * Math.sin(Math.PI * x);
+        func: function (x, imu) {
+          return imu * Math.sin(Math.PI * x);
         },
         expr: " * sin(PI * x)",
-        muRange: [0,4]
+        muRange: [0,1]
       }
     ];
 
     var selectedFunction = 0;
-    var mu = 2.5;
+    var mu = 0.5;
     var x0 = 0.5;
     var feigenbaum = [];
+    var feigenbaumResolution = 250;
 
     function almostEqual(n1, n2) {
       n1 = Math.round(n1 * 10000) / 10000;
@@ -82,9 +83,12 @@
 
     function calculateFeigenbaum () {
       var result = [];
-      for (var imu = 0; imu <= 4; imu = imu + 0.01) {
-        var tempArray = doIteration(funcList[selectedFunction].func, 0.5, imu, true);
-        result = result.concat(tempArray);
+      var delta = (funcList[selectedFunction].muRange[1]- funcList[selectedFunction].muRange[0])/feigenbaumResolution;
+      for (var imu = funcList[selectedFunction].muRange[0];
+        imu <= funcList[selectedFunction].muRange[1];
+        imu = imu + delta) {
+          var tempArray = doIteration(funcList[selectedFunction].func, 0.5, imu, true);
+          result = result.concat(tempArray);
       }
       return result;
     }
@@ -98,10 +102,26 @@
       plotMgr.pointPlot("#iterationPlot1", 300, 300, [100,200], "iteration step", iterationValues)
     }
 
+    function setSelectedFunction(index) {
+      selectedFunction = index;
+      mu = 0.5;
+      $("#mu")
+        .attr("min", funcList[index].muRange[0]*100)
+        .attr("max", funcList[index].muRange[1]*100)
+        .attr("value", 50);
+      feigenbaum = calculateFeigenbaum();
+      plotMgr.pointPlot("#feigenbaum", 600, 300, funcList[selectedFunction].muRange, "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
+      feigenbaum, {annotations: [{
+        x: mu,
+        text: '\u03BC'
+      }]});
+      update();
+    }
+
     document.getElementById("mu").oninput = function () {
       mu = this.value / 100;
       update();
-      plotMgr.pointPlot("#feigenbaum", 600, 300, [0,4], "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
+      plotMgr.pointPlot("#feigenbaum", 600, 300, funcList[selectedFunction].muRange, "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
         feigenbaum, {annotations: [{
           x: mu,
           text: '\u03BC'
@@ -113,14 +133,15 @@
       update();
     }
 
-    update();
+    $("#sel-func").change(function () {
+      setSelectedFunction(parseInt(
+        $( "#sel-func option:selected" ).attr("value")
+      ));
+    });
 
-    feigenbaum = calculateFeigenbaum();
-    plotMgr.pointPlot("#feigenbaum", 600, 300, [0,4], "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
-    feigenbaum, {annotations: [{
-      x: mu,
-      text: '\u03BC'
-    }]});
+    setSelectedFunction(1);
+
+
   </script>
 
 </body>
