@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>math.js | plot</title>
+  <title>Feigenbaum</title>
 
   <link rel="stylesheet" type="text/css" href="style.css" />
 
   <script src="lib/jquery-3.2.1.min.js"></script>
-
   <script src="lib/math.min.js"></script>
-
   <script src="lib/d3.min.js"></script>
   <script src="lib/function-plot.min.js"></script>
+
+  <script src="drawPlot.js"></script>
 </head>
 <body>
 
   <div>
+    <div>Function: </div>
+    <select id="sel-func">
+      <option value="quadratic">Quadratic Family</option>
+      <option value="sin">Sine function</option>
+    </select>
     <div>&#956; = <span id="valofmu"></span></div>
     <input id="mu" type="range" min="0" max="400" value="250">
     <br/>
@@ -27,6 +32,25 @@
   <div id="feigenbaum"></div>
 
   <script>
+    var funcList = [
+      {
+        name: "Quadratic family",
+        func: function (x, imu) {
+          return imu*x*(1-x);
+        },
+        expr: " * x * (1-x)",
+        muRange: [0,4]
+      }, {
+        name: "Sine",
+        func: function (x) {
+          return mu * Math.sin(Math.PI * x);
+        },
+        expr: " * sin(PI * x)",
+        muRange: [0,4]
+      }
+    ];
+
+    var selectedFunction = 0;
     var mu = 2.5;
     var x0 = 0.5;
     var feigenbaum = [];
@@ -37,58 +61,11 @@
       return (n1 == n2);
     }
 
-    function draw() {
-      var options = {
-        target: '#functionPlot1',
-        disableZoom: true,
-        width: 300,
-        height: 300,
-        xAxis: {
-          domain: [0, 1]
-        },
-        yAxis: {
-          domain: [0, 1]
-        },
-        tip: {
-          xLine: true
-        },
-        data: [{
-          fn: "x",
-          color: "gray",
-          sampler: 'builtIn',  // this will make function-plot use the evaluator of math.js
-          nSamples: 100,
-          graphType: 'polyline'
-        },{
-          fn: mu + " * x * (1-x)",
-          sampler: 'builtIn',  // this will make function-plot use the evaluator of math.js
-          graphType: 'polyline'
-        }]
-      };
-      if (mu > 1) {
-        options.annotations = [{
-          x: 1-1/mu,
-          text: 'p\u03BC'
-        },{
-          y: 1-1/mu
-        },{
-          x: 1/mu,
-          text: 'q\u03BC'
-        }];
-      }
-      try {
-        functionPlot(options);
-      }
-      catch (err) {
-        console.log(err);
-        alert(err);
-      }
-    }
-
-    function doIteration(func, x0, muValue) {
+    function doIteration(func, x0, muValue, breakAtCircle) {
       var result = [];
       for (var i = 0, xi = x0; i <= 200; i++) {
         if (i >= 100) {
-          if (typeof(muValue) == "number") {
+          if (breakAtCircle) {
             for (var j = 0; j < result.length; j++) {
               if (almostEqual(xi, result[j][1]))
                 return result;
@@ -98,92 +75,37 @@
           else
             result.push([i,xi]);
         }
-        xi = func(xi);
+        xi = func(xi, muValue);
       }
       return result;
     }
 
-    function drawIteration(iteration) {
-      try {
-        functionPlot({
-          target: '#iterationPlot1',
-          disableZoom: true,
-          width: 300,
-          height: 300,
-          xAxis: {
-            domain: [100, 200],
-            label: "iteration step"
-          },
-          yAxis: {
-            domain: [0, 1]
-          },
-          data: [{
-            fnType: "points",
-            points: iteration,
-            graphType: "scatter"
-          }]
-        });
-      }
-      catch (err) {
-        console.log(err);
-        alert(err);
-      }
-    }
-
     function calculateFeigenbaum () {
       var result = [];
-      for (var mu = 0; mu <= 4; mu = mu + 0.01) {
-        var tempArray = doIteration(function(x){return mu*x*(1-x);}, 0.5, mu);
+      for (var imu = 0; imu <= 4; imu = imu + 0.01) {
+        var tempArray = doIteration(funcList[selectedFunction].func, 0.5, imu, true);
         result = result.concat(tempArray);
       }
       return result;
     }
 
-    function drawFeigenbaum(feigenbaum, currentMu) {
-      try {
-        functionPlot({
-          target: '#feigenbaum',
-          disableZoom: true,
-          width: 600,
-          height: 300,
-          xAxis: {
-            domain: [0, 4],
-            label: "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
-          },
-          yAxis: {
-            domain: [0, 1]
-          },
-          annotations: [{
-            x: currentMu,
-            text: '\u03BC'
-          }],
-          data: [{
-            fnType: "points",
-            points: feigenbaum,
-            graphType: "scatter"
-          }]
-        });
-      }
-
-      catch (err) {
-        console.log(err);
-        alert(err);
-      }
-    }
-
     function update() {
       $("#valofmu").text(mu);
       $("#valofx0").text(x0);
-      draw();
-      var iterationValues = doIteration(function(x){return mu*x*(1-x);}, x0);
-      drawIteration(iterationValues);
-      //console.log(iterationValues);
+      plotMgr.funcPlotWithFixedPoint("#functionPlot1", 300, 300, [0,1],
+        mu + funcList[selectedFunction].expr);
+      var iterationValues = doIteration(funcList[selectedFunction].func, x0, mu, false);
+      plotMgr.pointPlot("#iterationPlot1", 300, 300, [100,200], "iteration step", iterationValues)
     }
 
     document.getElementById("mu").oninput = function () {
       mu = this.value / 100;
       update();
-      drawFeigenbaum(feigenbaum, mu);
+      plotMgr.pointPlot("#feigenbaum", 600, 300, [0,4], "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
+        feigenbaum, {annotations: [{
+          x: mu,
+          text: '\u03BC'
+      }]});
     }
 
     document.getElementById("x0").oninput = function () {
@@ -194,8 +116,11 @@
     update();
 
     feigenbaum = calculateFeigenbaum();
-    drawFeigenbaum(feigenbaum, mu);
-    console.log(feigenbaum);
+    plotMgr.pointPlot("#feigenbaum", 600, 300, [0,4], "\u03BC\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0",
+    feigenbaum, {annotations: [{
+      x: mu,
+      text: '\u03BC'
+    }]});
   </script>
 
 </body>
